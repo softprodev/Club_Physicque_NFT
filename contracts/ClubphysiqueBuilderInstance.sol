@@ -201,3 +201,72 @@ contract IERC721 is IERC165 {
 
    function safeTransferFrom(address from, address to, uint256 tokenId, bytes memory data) public;
 }
+
+
+
+/**
+* @title ERC721 token receiver interface
+* @dev Interface for any contract that wants to support safeTransfers
+* from ERC721 asset contracts.
+*/
+contract IERC721Receiver {
+   /**
+    * @notice Handle the receipt of an NFT
+    * @dev The ERC721 smart contract calls this function on the recipient
+    * after a {IERC721-safeTransferFrom}. This function MUST return the function selector,
+    * otherwise the caller will revert the transaction. The selector to be
+    * returned can be obtained as `this.onERC721Received.selector`. This
+    * function MAY throw to revert and reject the transfer.
+    * Note: the ERC721 contract address is always the message sender.
+    * @param operator The address which called `safeTransferFrom` function
+    * @param from The address which previously owned the token
+    * @param tokenId The NFT identifier which is being transferred
+    * @param data Additional data with no specified format
+    * @return bytes4 `bytes4(keccak256("onERC721Received(address,address,uint256,bytes)"))`
+    */
+   function onERC721Received(address operator, address from, uint256 tokenId, bytes memory data)
+   public returns (bytes4);
+}
+
+/**
+* @title ERC721 Non-Fungible Token Standard basic implementation
+* @dev see https://eips.ethereum.org/EIPS/eip-721
+*/
+contract ERC721 is Context, ERC165, IERC721 {
+   using SafeMath for uint256;
+   using Address for address;
+   using Counters for Counters.Counter;
+
+   // Equals to `bytes4(keccak256("onERC721Received(address,address,uint256,bytes)"))`
+   // which can be also obtained as `IERC721Receiver(0).onERC721Received.selector`
+   bytes4 private constant _ERC721_RECEIVED = 0x150b7a02;
+
+   // Mapping from token ID to owner
+   mapping (uint256 => address) private _tokenOwner;
+
+   // Mapping from token ID to approved address
+   mapping (uint256 => address) private _tokenApprovals;
+
+   // Mapping from owner to number of owned token
+   mapping (address => Counters.Counter) private _ownedTokensCount;
+
+   // Mapping from owner to operator approvals
+   mapping (address => mapping (address => bool)) private _operatorApprovals;
+
+   bytes4 private constant _INTERFACE_ID_ERC721 = 0x80ac58cd;
+
+   constructor () public {
+       // register the supported interfaces to conform to ERC721 via ERC165
+       _registerInterface(_INTERFACE_ID_ERC721);
+   }
+
+   /**
+    * @dev Gets the balance of the specified address.
+    * @param owner address to query the balance of
+    * @return uint256 representing the amount owned by the passed address
+    */
+   function balanceOf(address owner) public view returns (uint256) {
+       require(owner != address(0), "ERC721: balance query for the zero address");
+
+       return _ownedTokensCount[owner].current();
+   }
