@@ -270,3 +270,120 @@ contract ERC721 is Context, ERC165, IERC721 {
 
        return _ownedTokensCount[owner].current();
    }
+
+   /**
+    * @dev Gets the owner of the specified token ID.
+    * @param tokenId uint256 ID of the token to query the owner of
+    * @return address currently marked as the owner of the given token ID
+    */
+   function ownerOf(uint256 tokenId) public view returns (address) {
+       address owner = _tokenOwner[tokenId];
+       require(owner != address(0), "ERC721: owner query for nonexistent token");
+
+       return owner;
+   }
+
+   /**
+    * @dev Approves another address to transfer the given token ID
+    * The zero address indicates there is no approved address.
+    * There can only be one approved address per token at a given time.
+    * Can only be called by the token owner or an approved operator.
+    * @param to address to be approved for the given token ID
+    * @param tokenId uint256 ID of the token to be approved
+    */
+   function approve(address to, uint256 tokenId) public {
+       address owner = ownerOf(tokenId);
+       require(to != owner, "ERC721: approval to current owner");
+
+       require(_msgSender() == owner || isApprovedForAll(owner, _msgSender()),
+           "ERC721: approve caller is not owner nor approved for all"
+       );
+
+       _tokenApprovals[tokenId] = to;
+       emit Approval(owner, to, tokenId);
+   }
+
+   /**
+    * @dev Gets the approved address for a token ID, or zero if no address set
+    * Reverts if the token ID does not exist.
+    * @param tokenId uint256 ID of the token to query the approval of
+    * @return address currently approved for the given token ID
+    */
+   function getApproved(uint256 tokenId) public view returns (address) {
+       require(_exists(tokenId), "ERC721: approved query for nonexistent token");
+
+       return _tokenApprovals[tokenId];
+   }
+
+   /**
+    * @dev Sets or unsets the approval of a given operator
+    * An operator is allowed to transfer all tokens of the sender on their behalf.
+    * @param to operator address to set the approval
+    * @param approved representing the status of the approval to be set
+    */
+   function setApprovalForAll(address to, bool approved) public {
+       require(to != _msgSender(), "ERC721: approve to caller");
+
+       _operatorApprovals[_msgSender()][to] = approved;
+       emit ApprovalForAll(_msgSender(), to, approved);
+   }
+
+   /**
+    * @dev Tells whether an operator is approved by a given owner.
+    * @param owner owner address which you want to query the approval of
+    * @param operator operator address which you want to query the approval of
+    * @return bool whether the given operator is approved by the given owner
+    */
+   function isApprovedForAll(address owner, address operator) public view returns (bool) {
+       return _operatorApprovals[owner][operator];
+   }
+
+   /**
+    * @dev Transfers the ownership of a given token ID to another address.
+    * Usage of this method is discouraged, use {safeTransferFrom} whenever possible.
+    * Requires the msg.sender to be the owner, approved, or operator.
+    * @param from current owner of the token
+    * @param to address to receive the ownership of the given token ID
+    * @param tokenId uint256 ID of the token to be transferred
+    */
+   function transferFrom(address from, address to, uint256 tokenId) public {
+       //solhint-disable-next-line max-line-length
+       require(_isApprovedOrOwner(_msgSender(), tokenId), "ERC721: transfer caller is not owner nor approved");
+
+       _transferFrom(from, to, tokenId);
+   }
+
+   /**
+    * @dev Safely transfers the ownership of a given token ID to another address
+    * If the target address is a contract, it must implement {IERC721Receiver-onERC721Received},
+    * which is called upon a safe transfer, and return the magic value
+    * `bytes4(keccak256("onERC721Received(address,address,uint256,bytes)"))`; otherwise,
+    * the transfer is reverted.
+    * Requires the msg.sender to be the owner, approved, or operator
+    * @param from current owner of the token
+    * @param to address to receive the ownership of the given token ID
+    * @param tokenId uint256 ID of the token to be transferred
+    */
+   function safeTransferFrom(address from, address to, uint256 tokenId) public {
+       safeTransferFrom(from, to, tokenId, "");
+   }
+
+   /**
+    * @dev Safely transfers the ownership of a given token ID to another address
+    * If the target address is a contract, it must implement {IERC721Receiver-onERC721Received},
+    * which is called upon a safe transfer, and return the magic value
+    * `bytes4(keccak256("onERC721Received(address,address,uint256,bytes)"))`; otherwise,
+    * the transfer is reverted.
+    * Requires the _msgSender() to be the owner, approved, or operator
+    * @param from current owner of the token
+    * @param to address to receive the ownership of the given token ID
+    * @param tokenId uint256 ID of the token to be transferred
+    * @param _data bytes data to send along with a safe transfer check
+    */
+   function safeTransferFrom(address from, address to, uint256 tokenId, bytes memory _data) public {
+       require(_isApprovedOrOwner(_msgSender(), tokenId), "ERC721: transfer caller is not owner nor approved");
+       _safeTransferFrom(from, to, tokenId, _data);
+   }
+
+
+}
