@@ -488,5 +488,119 @@ contract ERC721 is Context, ERC165, IERC721 {
 
        emit Transfer(owner, address(0), tokenId);
    }
+   
+   /**
+    * @dev Internal function to burn a specific token.
+    * Reverts if the token does not exist.
+    * @param tokenId uint256 ID of the token being burned
+    */
+   function _burn(uint256 tokenId) internal {
+       _burn(ownerOf(tokenId), tokenId);
+   }
 
+   /**
+    * @dev Internal function to transfer ownership of a given token ID to another address.
+    * As opposed to {transferFrom}, this imposes no restrictions on msg.sender.
+    * @param from current owner of the token
+    * @param to address to receive the ownership of the given token ID
+    * @param tokenId uint256 ID of the token to be transferred
+    */
+   function _transferFrom(address from, address to, uint256 tokenId) internal {
+       require(ownerOf(tokenId) == from, "ERC721: transfer of token that is not own");
+       require(to != address(0), "ERC721: transfer to the zero address");
+
+       _clearApproval(tokenId);
+
+       _ownedTokensCount[from].decrement();
+       _ownedTokensCount[to].increment();
+
+       _tokenOwner[tokenId] = to;
+
+       emit Transfer(from, to, tokenId);
+   }
+
+   /**
+    * @dev Internal function to invoke {IERC721Receiver-onERC721Received} on a target address.
+    * The call is not executed if the target address is not a contract.
+    *
+    * This function is deprecated.
+    * @param from address representing the previous owner of the given token ID
+    * @param to target address that will receive the tokens
+    * @param tokenId uint256 ID of the token to be transferred
+    * @param _data bytes optional data to send along with the call
+    * @return bool whether the call correctly returned the expected magic value
+    */
+   function _checkOnERC721Received(address from, address to, uint256 tokenId, bytes memory _data)
+       internal returns (bool)
+   {
+       if (!to.isContract()) {
+           return true;
+       }
+
+       bytes4 retval = IERC721Receiver(to).onERC721Received(_msgSender(), from, tokenId, _data);
+       return (retval == _ERC721_RECEIVED);
+   }
+
+   /**
+    * @dev Private function to clear current approval of a given token ID.
+    * @param tokenId uint256 ID of the token to be transferred
+    */
+   function _clearApproval(uint256 tokenId) private {
+       if (_tokenApprovals[tokenId] != address(0)) {
+           _tokenApprovals[tokenId] = address(0);
+       }
+   }
+}
+
+/**
+* @title ERC-721 Non-Fungible Token Standard, optional enumeration extension
+* @dev See https://eips.ethereum.org/EIPS/eip-721
+*/
+contract IERC721Enumerable is IERC721 {
+   function totalSupply() public view returns (uint256);
+   function tokenOfOwnerByIndex(address owner, uint256 index) public view returns (uint256 tokenId);
+
+   function tokenByIndex(uint256 index) public view returns (uint256);
+}
+
+
+
+/**
+* @title ERC-721 Non-Fungible Token Standard, optional enumeration extension
+* @dev See https://eips.ethereum.org/EIPS/eip-721
+*/
+contract IERC721Enumerable is IERC721 {
+   function totalSupply() public view returns (uint256);
+   function tokenOfOwnerByIndex(address owner, uint256 index) public view returns (uint256 tokenId);
+
+   function tokenByIndex(uint256 index) public view returns (uint256);
+}
+
+
+// for next
+/**
+* @title ERC-721 Non-Fungible Token with optional enumeration extension logic
+* @dev See https://eips.ethereum.org/EIPS/eip-721
+*/
+contract ERC721Enumerable is Context, ERC165, ERC721, IERC721Enumerable {
+   // Mapping from owner to list of owned token IDs
+   mapping(address => uint256[]) private _ownedTokens;
+
+   // Mapping from token ID to index of the owner tokens list
+   mapping(uint256 => uint256) private _ownedTokensIndex;
+
+   // Array with all token ids, used for enumeration
+   uint256[] private _allTokens;
+
+   // Mapping from token id to position in the allTokens array
+   mapping(uint256 => uint256) private _allTokensIndex;
+
+   /*
+    *     bytes4(keccak256('totalSupply()')) == 0x18160ddd
+    *     bytes4(keccak256('tokenOfOwnerByIndex(address,uint256)')) == 0x2f745c59
+    *     bytes4(keccak256('tokenByIndex(uint256)')) == 0x4f6ccce7
+    *
+    *     => 0x18160ddd ^ 0x2f745c59 ^ 0x4f6ccce7 == 0x780e9d63
+    */
+   bytes4 private constant _INTERFACE_ID_ERC721_ENUMERABLE = 0x780e9d63; // need to change
 }
