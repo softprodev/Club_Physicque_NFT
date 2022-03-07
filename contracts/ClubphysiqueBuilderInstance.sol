@@ -603,4 +603,107 @@ contract ERC721Enumerable is Context, ERC165, ERC721, IERC721Enumerable {
     *     => 0x18160ddd ^ 0x2f745c59 ^ 0x4f6ccce7 == 0x780e9d63
     */
    bytes4 private constant _INTERFACE_ID_ERC721_ENUMERABLE = 0x780e9d63; // need to change
+
+   /**
+    * @dev Constructor function.
+    */
+   constructor () public {
+       // register the supported interface to conform to ERC721Enumerable via ERC165
+       _registerInterface(_INTERFACE_ID_ERC721_ENUMERABLE);
+   }
+
+   /**
+    * @dev Gets the token ID at a given index of the tokens list of the requested owner.
+    * @param owner address owning the tokens list to be accessed
+    * @param index uint256 representing the index to be accessed of the requested tokens list
+    * @return uint256 token ID at the given index of the tokens list owned by the requested address
+    */
+   function tokenOfOwnerByIndex(address owner, uint256 index) public view returns (uint256) {
+       require(index < balanceOf(owner), "ERC721Enumerable: owner index out of bounds");
+       return _ownedTokens[owner][index];
+   }
+
+   /**
+    * @dev Gets the total amount of tokens stored by the contract.
+    * @return uint256 representing the total amount of tokens
+    */
+   function totalSupply() public view returns (uint256) {
+       return _allTokens.length;
+   }
+
+   /**
+    * @dev Gets the token ID at a given index of all the tokens in this contract
+    * Reverts if the index is greater or equal to the total number of tokens.
+    * @param index uint256 representing the index to be accessed of the tokens list
+    * @return uint256 token ID at the given index of the tokens list
+    */
+   function tokenByIndex(uint256 index) public view returns (uint256) {
+       require(index < totalSupply(), "ERC721Enumerable: global index out of bounds");
+       return _allTokens[index];
+   }
+
+   /**
+    * @dev Internal function to transfer ownership of a given token ID to another address.
+    * As opposed to transferFrom, this imposes no restrictions on msg.sender.
+    * @param from current owner of the token
+    * @param to address to receive the ownership of the given token ID
+    * @param tokenId uint256 ID of the token to be transferred
+    */
+   function _transferFrom(address from, address to, uint256 tokenId) internal {
+       super._transferFrom(from, to, tokenId);
+
+       _removeTokenFromOwnerEnumeration(from, tokenId);
+
+       _addTokenToOwnerEnumeration(to, tokenId);
+   }
+
+   /**
+    * @dev Internal function to mint a new token.
+    * Reverts if the given token ID already exists.
+    * @param to address the beneficiary that will own the minted token
+    * @param tokenId uint256 ID of the token to be minted
+    */
+   function _mint(address to, uint256 tokenId) internal {
+       super._mint(to, tokenId);
+
+       _addTokenToOwnerEnumeration(to, tokenId);
+
+       _addTokenToAllTokensEnumeration(tokenId);
+   }
+
+   /**
+    * @dev Internal function to burn a specific token.
+    * Reverts if the token does not exist.
+    * Deprecated, use {ERC721-_burn} instead.
+    * @param owner owner of the token to burn
+    * @param tokenId uint256 ID of the token being burned
+    */
+   function _burn(address owner, uint256 tokenId) internal {
+       super._burn(owner, tokenId);
+
+       _removeTokenFromOwnerEnumeration(owner, tokenId);
+       // Since tokenId will be deleted, we can clear its slot in _ownedTokensIndex to trigger a gas refund
+       _ownedTokensIndex[tokenId] = 0;
+
+       _removeTokenFromAllTokensEnumeration(tokenId);
+   }
+
+   /**
+    * @dev Gets the list of token IDs of the requested owner.
+    * @param owner address owning the tokens
+    * @return uint256[] List of token IDs owned by the requested address
+    */
+   function _tokensOfOwner(address owner) internal view returns (uint256[] storage) {
+       return _ownedTokens[owner];
+   }
+
+   /**
+    * @dev Private function to add a token to this extension's ownership-tracking data structures.
+    * @param to address representing the new owner of the given token ID
+    * @param tokenId uint256 ID of the token to be added to the tokens list of the given address
+    */
+   function _addTokenToOwnerEnumeration(address to, uint256 tokenId) private {
+       _ownedTokensIndex[tokenId] = _ownedTokens[to].length;
+       _ownedTokens[to].push(tokenId);
+   }
 }
