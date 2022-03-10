@@ -841,5 +841,146 @@ contract ERC721Metadata is Context, ERC165, ERC721, IERC721Metadata {
        require(_exists(tokenId), "ERC721Metadata: URI query for nonexistent token");
        return _tokenURIs[tokenId];
    }
+
+        /**
+    * @dev Returns an URI for a given token ID.
+    * Throws if the token ID does not exist. May return an empty string.
+    * @param tokenId uint256 ID of the token to query
+    */
+   function tokenIPFSHash(uint256 tokenId) external view returns (string memory) {
+       require(_exists(tokenId), "ERC721Metadata: URI query for nonexistent token");
+       return _tokenIPFSHashes[tokenId];
+   }
+
+   /**
+    * @dev Internal function to set the token URI for a given token.
+    * Reverts if the token ID does not exist.
+    * @param tokenId uint256 ID of the token to set its URI
+    * @param uri string URI to assign
+    */
+   function _setTokenURI(uint256 tokenId, string memory uri) internal {
+       require(_exists(tokenId), "ERC721Metadata: URI set of nonexistent token");
+       _tokenURIs[tokenId] = uri;
+   }
    
+      /**
+    * @dev Internal function to set the token IPFS hash for a given token.
+    * Reverts if the token ID does not exist.
+    * @param tokenId uint256 ID of the token to set its URI
+    * @param ipfs_hash string IPFS link to assign
+    */
+   function _setTokenIPFSHash(uint256 tokenId, string memory ipfs_hash) internal {
+       require(_exists(tokenId), "ERC721Metadata: URI set of nonexistent token");
+       _tokenIPFSHashes[tokenId] = ipfs_hash;
+   }
+   
+   
+
+   /**
+    * @dev Internal function to burn a specific token.
+    * Reverts if the token does not exist.
+    * Deprecated, use _burn(uint256) instead.
+    * @param owner owner of the token to burn
+    * @param tokenId uint256 ID of the token being burned by the msg.sender
+    */
+   function _burn(address owner, uint256 tokenId) internal {
+       super._burn(owner, tokenId);
+
+       // Clear metadata (if any)
+       if (bytes(_tokenURIs[tokenId]).length != 0) {
+           delete _tokenURIs[tokenId];
+       }
+   }
+}
+
+/**
+* @title Full ERC721 Token
+* @dev This implementation includes all the required and some optional functionality of the ERC721 standard
+* Moreover, it includes approve all functionality using operator terminology.
+*
+* See https://eips.ethereum.org/EIPS/eip-721
+*/
+contract ERC721Full is ERC721, ERC721Enumerable, ERC721Metadata {
+   constructor (string memory name, string memory symbol) public ERC721Metadata(name, symbol) {
+       // solhint-disable-previous-line no-empty-blocks
+   }
+}
+
+contract ClubPhysiqueBuilderInstance is ERC721Full {
+
+   //MODIFIERS
+
+   modifier onlyValidSender() {
+       ClubPhysiqueRegistry nftg_registry = ClubPhysiqueRegistry(clubphysiqueRegistryContract);
+       bool is_valid = nftg_registry.isValidClubPhysiqueSender(msg.sender);
+       require(is_valid==true);
+       _;
+   }
+
+   //CONSTANTS
+
+   // how many clubphysiques this contract is selling
+   // used for metadat retrieval
+   uint public numClubphysiquesCurrentlyInContract;
+
+   //id of this contract for metadata server
+   uint public contractId;
+   
+   //is permanently closed
+   bool public isClosed = false;
+
+   //baseURI for metadata server
+   string public baseURI;
+
+//   //name of creator
+//   string public creatorName;
+
+   string public nameOfCreator;
+
+   //clubphysique registry contract
+   address public clubphysiqueRegistryContract = 0x6e53130dDfF21E3BC963Ee902005223b9A202106; // need to change
+
+   //master builder - ONLY DOES STATIC CALLS
+   address public masterBuilderContract = 0x6EFB06cF568253a53C7511BD3c31AB28BecB0192; // need to change
+
+   using Counters for Counters.Counter;
+
+
+   //MAPPINGS
+
+   //mappings for token Ids
+   mapping (uint => Counters.Counter) public _numClubPhysiqueMinted;
+   mapping (uint => uint) public _clubphysiquePrice;
+   mapping (uint => string) public _clubphysiqueIPFSHashes;
+   mapping (uint => bool) public _IPFSHashHasBeenSet;
+
+   //EVENTS
+
+   //purchase + creation events
+   event ClubPhysiquePurchased(address _buyer, uint256 _amount, uint _tokenId);
+   event ClubPhysiqueCreated(address new_owner, uint _clubphysiqueType, uint _tokenId);
+
+   //CONSTRUCTOR FUNCTION
+
+   constructor(
+       string memory _name,
+       string memory _symbol,
+       uint contract_id,
+       uint num_clubphysiques,
+       string memory base_uri,
+       string memory name_of_creator) ERC721Full(_name, _symbol) public {
+
+       //set local variables based on inputs
+       contractId = contract_id;
+       numClubphysiquesCurrentlyInContract = num_clubphysiques;
+       baseURI = base_uri;
+       nameOfCreator = name_of_creator;
+
+       //offset starts at 1 - there is no clubphysiqueType of 0
+    //   for (uint i=0; i<(num_clubphysiques); i++) {
+    //       _nuClubPhysiquePermitted[i+1] = clubphysique_quantities[i];
+    //   }
+   }
+   
+
 }
