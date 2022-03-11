@@ -982,5 +982,108 @@ contract ClubPhysiqueBuilderInstance is ERC721Full {
     //   }
    }
    
+   function setClubPhysiqueIPFSHash(uint clubphysiqueType, 
+                            string memory ipfs_hash) onlyValidSender public {
+        //can only be set once
+        if (_IPFSHashHasBeenSet[clubphysiqueType] == true) {
+            revert("Can only be set once");
+        } else {
+            _clubphysiqueIPFSHashes[clubphysiqueType] = ipfs_hash;
+            _IPFSHashHasBeenSet[clubphysiqueType]  = true;
+        }
+    }
+    
+    function closeContract() onlyValidSender public {
+        //permanently close this open edition
+        isClosed = true;
+        
+    }
+
+   function giftClubPhysique(address collector_address, 
+                      uint clubphysiqueType) onlyValidSender public {
+       //master for static calls
+       BuilderMaster bm = BuilderMaster(masterBuilderContract);
+       _numClubPhysiqueMinted[clubphysiqueType].increment();
+       //check if this collection is closed
+       if (isClosed==true) {
+           revert("This contract is closed!");
+       }
+       //mint a clubphysique
+       uint specificTokenId = _numClubPhysiqueMinted[clubphysiqueType].current();
+       uint tokenId = bm.encodeTokenId(contractId, clubphysiqueType, specificTokenId);
+       string memory tokenIdStr = bm.uint2str(tokenId);
+       string memory tokenURI = bm.strConcat(baseURI, tokenIdStr);
+       string memory ipfsHash = _clubphysiqueIPFSHashes[clubphysiqueType];
+       //mint token
+       _mint(collector_address, tokenId);
+       _setTokenURI(tokenId, tokenURI);
+       _setTokenIPFSHash(tokenId, ipfsHash);
+       //do events
+       emit ClubPhysiqueCreated(collector_address, clubphysiqueType, tokenId);
+   }
+
+}
+
+contract ClubPhysiqueRegistry {
+   function isValidClubPhysiqueSender(address sending_key) public view returns (bool);
+   function isOwner(address owner_key) public view returns (bool);
+}
+
+contract BuilderMaster {
+   function getContractId(uint tokenId) public view returns (uint);
+   function getClubPhysiqueTypeId(uint tokenId) public view returns (uint);
+   function getSpecificClubPhysiqueNum(uint tokenId) public view returns (uint);
+   function encodeTokenId(uint contractId, uint clubphysiqueType, uint specificClubPhysiqueNum) public view returns (uint);
+   function strConcat(string memory _a, string memory _b, string memory _c, string memory _d, string memory _e) public view returns (string memory);
+   function strConcat(string memory _a, string memory _b, string memory _c, string memory _d) public view returns (string memory);
+   function strConcat(string memory _a, string memory _b, string memory _c) public view returns (string memory);
+   function strConcat(string memory _a, string memory _b) public view returns (string memory);
+   function uint2str(uint _i) public view returns (string memory _uintAsString);
+}
+
+
+/**
+* @dev Wrappers over Solidity's arithmetic operations with added overflow
+* checks.
+*
+* Arithmetic operations in Solidity wrap on overflow. This can easily result
+* in bugs, because programmers usually assume that an overflow raises an
+* error, which is the standard behavior in high level programming languages.
+* `SafeMath` restores this intuition by reverting the transaction when an
+* operation overflows.
+*
+* Using this library instead of the unchecked operations eliminates an entire
+* class of bugs, so it's recommended to use it always.
+*/
+
+library SafeMath {
+   /**
+    * @dev Returns the addition of two unsigned integers, reverting on
+    * overflow.
+    *
+    * Counterpart to Solidity's `+` operator.
+    *
+    * Requirements:
+    * - Addition cannot overflow.
+    */
+   function add(uint256 a, uint256 b) internal pure returns (uint256) {
+       uint256 c = a + b;
+       require(c >= a, "SafeMath: addition overflow");
+
+       return c;
+   }
+
+   /**
+    * @dev Returns the subtraction of two unsigned integers, reverting on
+    * overflow (when the result is negative).
+    *
+    * Counterpart to Solidity's `-` operator.
+    *
+    * Requirements:
+    * - Subtraction cannot overflow.
+    */
+   function sub(uint256 a, uint256 b) internal pure returns (uint256) {
+       return sub(a, b, "SafeMath: subtraction overflow");
+   }
 
 }
